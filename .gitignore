@@ -1,1 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
 
+# Environment variables
+.env
+
+# Node
+node_modules/
+
+# React build
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# FAISS index (optional)
+*.index
