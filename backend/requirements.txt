@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+playwright
+beautifulsoup4
+lxml
+langchain
+langchain-google-genai
+langchain-community
+faiss-cpu
+python-dotenv
+sse-starlette
+numpy
