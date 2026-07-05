@@ -8,9 +8,18 @@ import ChatWindow from './components/ChatWindow'
 import ChatInput from './components/ChatInput'
 
 export default function App() {
-  const { startCrawl, resetCrawl, phase: crawlPhase, progress: crawlProgress, error: crawlError, sessionId, isComplete } = useCrawl()
+  const {
+    startCrawl,
+    resetCrawl,
+    phase: crawlPhase,
+    progress: crawlProgress,
+    error: crawlError,
+    sessionId,
+    totalChunks,
+    isComplete
+  } = useCrawl()
   const { messages, isStreaming, error: chatError, sendMessage, clearMessages } = useChat()
-  
+
   const [appPhase, setAppPhase] = useState('input') // 'input', 'crawling', 'ready'
   const [crawledUrl, setCrawledUrl] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -69,7 +78,7 @@ export default function App() {
           <Sidebar
             websiteUrl={crawledUrl}
             pagesCrawled={crawlProgress.pages_crawled}
-            totalChunks={crawlProgress.total_discovered} // Using discovered count as proxy
+            totalChunks={totalChunks}
             onNewCrawl={handleNewCrawl}
             isOpen={sidebarOpen}
             onToggle={toggleSidebar}

@@ -5,25 +5,26 @@ export function useCrawl() {
   const [progress, setProgress] = useState({ pages_crawled: 0, total_discovered: 0, current_url: '' })
   const [error, setError] = useState(null)
   const [sessionId, setSessionId] = useState(null)
+  const [totalChunks, setTotalChunks] = useState(0)
 
   const resetCrawl = useCallback(() => {
     setPhase('idle')
     setProgress({ pages_crawled: 0, total_discovered: 0, current_url: '' })
     setError(null)
     setSessionId(null)
+    setTotalChunks(0)
   }, [])
 
-  const startCrawl = useCallback(async (url, maxPages = 50) => {
+  const startCrawl = useCallback(async (url, maxPages = 10) => {
     setPhase('crawling')
     setProgress({ pages_crawled: 0, total_discovered: 0, current_url: url })
     setError(null)
+    setTotalChunks(0)
 
     try {
       const response = await fetch('/api/crawl', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, max_pages: maxPages }),
       })
 
@@ -42,7 +43,7 @@ export function useCrawl() {
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
-        buffer = lines.pop() // Save partial line for next iteration
+        buffer = lines.pop()
 
         for (const line of lines) {
           const trimmed = line.trim()
@@ -54,7 +55,7 @@ export function useCrawl() {
             const dataStr = trimmed.slice(5).trim()
             try {
               const data = JSON.parse(dataStr)
-              
+
               if (data.session_id) {
                 setSessionId(data.session_id)
               }
@@ -71,6 +72,8 @@ export function useCrawl() {
               } else if (currentEvent === 'embedding') {
                 setPhase('embedding')
               } else if (currentEvent === 'complete') {
+                // Capture real chunk count from backend complete event
+                setTotalChunks(data.total_chunks || 0)
                 setPhase('complete')
               } else if (currentEvent === 'error') {
                 setPhase('error')
@@ -95,6 +98,7 @@ export function useCrawl() {
     progress,
     error,
     sessionId,
+    totalChunks,
     isComplete: phase === 'complete'
   }
 }

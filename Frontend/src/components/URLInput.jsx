@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 
 export default function URLInput({ onSubmit, isLoading }) {
   const [url, setUrl] = useState('')
-  const [maxPages, setMaxPages] = useState(50)
+  const [maxPages, setMaxPages] = useState(10)
   const [error, setError] = useState('')
 
   const handleSubmit = (e) => {
@@ -81,7 +81,7 @@ export default function URLInput({ onSubmit, isLoading }) {
           </div>
           <input
             type="range"
-            min="10"
+            min="0"
             max="100"
             step="5"
             value={maxPages}

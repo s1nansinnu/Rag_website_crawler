@@ -3,7 +3,7 @@ import React from 'react'
 export default function CrawlProgress({ phase, progress, error, onStartChat, onReset }) {
   const steps = [
     { key: 'crawling', label: 'Crawl Website Pages' },
-    { key: 'chunking', label: 'Split HTML into Chunks' },
+    { key: 'chunking', label: 'Split Content into Chunks' },
     { key: 'embedding', label: 'Generate Embeddings' },
     { key: 'complete', label: 'Ready to Chat' }
   ]
@@ -24,16 +24,15 @@ export default function CrawlProgress({ phase, progress, error, onStartChat, onR
     return 'idle'
   }
 
-  // Calculate generic progress percentage for display
   const getProgressPercentage = () => {
     switch (phase) {
       case 'crawling':
-        // Just show a pulse/indeterminate or an estimated crawl progress
-        return Math.min((progress.pages_crawled / 30) * 100, 95)
+        // Estimate based on 10 default pages
+        return Math.min((progress.pages_crawled / 10) * 80, 80)
       case 'chunking':
-        return 95
+        return 85
       case 'embedding':
-        return 98
+        return 95
       case 'complete':
         return 100
       default:
@@ -121,12 +120,17 @@ export default function CrawlProgress({ phase, progress, error, onStartChat, onR
                 {/* Subtext info for active states */}
                 {step.key === 'crawling' && status === 'active' && (
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', wordBreak: 'break-all' }}>
-                    Crawled {progress.pages_crawled} pages...
+                    Crawled {progress.pages_crawled} pages (HTML, PDF, images)...
+                  </span>
+                )}
+                {step.key === 'chunking' && status === 'active' && (
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                    Splitting text from all content types...
                   </span>
                 )}
                 {step.key === 'embedding' && status === 'active' && (
                   <span style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Embedding text chunks via Gemini...
+                    Embedding chunks in parallel via Gemini...
                   </span>
                 )}
               </div>
