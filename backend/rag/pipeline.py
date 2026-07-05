@@ -84,9 +84,17 @@ async def ingest_documents(
         chunk_size=config.CHUNK_SIZE,
         chunk_overlap=config.CHUNK_OVERLAP,
         length_function=len,
-        separators=["\n\n", "\n", ". ", " ", ""],
+        separators=["\n\n", "\n", ". ", "! ", "? ", "; ", ", ", " ", ""],
     )
     chunks = splitter.split_documents(documents)
+    seen = set()
+    unique_chunks= []
+    for chunk in chunks:
+        key= chunk.page_content[:200]
+        if key not in seen:
+            seen.add(key)
+            unique_chunks.append(chunk)
+    chunks = unique_chunks
     total_chunks = len(chunks)
 
     active_sessions[session_id]["total_chunks"] = total_chunks
@@ -179,7 +187,7 @@ async def query(
         return
 
     # Retrieve relevant documents
-    retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+    retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
 
     try:
         relevant_docs = await asyncio.to_thread(retriever.invoke, question)
@@ -190,12 +198,14 @@ async def query(
 
     # Build context string
     seen_content: set[str] = set()
+    seen_sources: set[str] = set()
     context_parts: list[str] = []
     source_urls: list[str] = []
     for doc in relevant_docs:
-        if doc.page_content in seen_content:
+        content_key = doc.page_content[:200]
+        if content_key in seen_content:
             continue
-        seen_content.add(doc.page_content)
+        seen_content.add(content_key)
         src = doc.metadata.get("source", "unknown")
         title = doc.metadata.get("title", "")
         header = f"[Source: {src}]" + (f" (Title: {title})" if title else "")

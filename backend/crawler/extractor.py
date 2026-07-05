@@ -111,7 +111,7 @@ def extract(html: str, url: str) -> dict:
         text = tag.get_text(strip=True) if tag else ""
         clean_text = _MULTI_WHITESPACE.sub(" ", text).strip()
         return {"url": url, "title": url.split("/")[-1], "text": clean_text}
-
+ 
     # ── Normal HTML ───────────────────────────────────────────────────────
     title, clean_text = _extract_html(html)
     return {"url": url, "title": title, "text": clean_text}
