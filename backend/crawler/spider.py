@@ -167,6 +167,21 @@ async def crawl(
         await context.route("**/*", _block_resources)
         page = await context.new_page()
 
+        # Capture XHR/fetch API responses for JS-rendered job listings
+        api_data: list[str] = []
+
+        async def _capture_api(response):
+            if "job" in response.url and response.status == 200:
+                try:
+                    ct = response.headers.get("content-type", "")
+                    if "json" in ct:
+                        body = await response.json()
+                        api_data.append(json.dumps(body))
+                except Exception:
+                    pass
+
+        page.on("response", _capture_api)
+
         while queue and pages_crawled < max_pages:
             url = queue.popleft()
             normalised = normalise_url(url)
@@ -211,6 +226,9 @@ async def crawl(
                             html = f'<plain-text src="{normalised}">{raw_bytes.decode("utf-8", errors="replace")}</plain-text>'
                         elif page_type == "html":
                             pw_html = await page.content()
+                            # Append any captured API JSON as extra text
+                        elif api_data:
+                            html += "<api-data>" + " ".join(api_data) + "</api-data>"
                             # Check if page has meaningful content (not blank/blocked)
                             text_len = await page.evaluate("() => document.body?.innerText?.length || 0")
                             if text_len > 200:

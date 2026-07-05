@@ -8,6 +8,7 @@ from __future__ import annotations
 import io
 import re
 import logging
+import json
 
 from bs4 import BeautifulSoup
 import pdfplumber
@@ -52,7 +53,10 @@ def _extract_html(html: str) -> tuple[str, str]:
     for tag_name in _STRIP_TAGS:
         for tag in soup.find_all(tag_name):
             tag.decompose()
-
+    # Extract any injected API JSON data
+    api_tag = soup.find("api-data")
+    if api_tag:
+        clean_text += " " + _MULTI_WHITESPACE.sub(" ", api_tag.get_text(" ", strip=True))
     # Extract title
     title_tag = soup.find("title")
     title = title_tag.get_text(strip=True) if title_tag else ""
