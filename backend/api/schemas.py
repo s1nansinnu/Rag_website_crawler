@@ -22,3 +22,5 @@ class CrawlStatus(BaseModel):
     status: str = Field(..., description="Current status (idle | crawling | indexing | ready | error)")
     pages_crawled: int = Field(default=0)
     total_chunks: int = Field(default=0)
+
+max_pages: int = Field(default=10, ge=10, le=500, description="Max pages to crawl")
