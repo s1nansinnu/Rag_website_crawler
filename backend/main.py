@@ -4,6 +4,11 @@ FastAPI File with cors, routers and startup hooks
 
 import asyncio
 import sys
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,8 +21,6 @@ app = FastAPI(
     title="Website Crawler RAG Chatbot",
     version="1.0.0"
 )
-if sys.platform == "win32":
-    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
 
 app.add_middleware(
