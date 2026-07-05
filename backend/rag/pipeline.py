@@ -189,9 +189,13 @@ async def query(
         return
 
     # Build context string
+    seen_content: set[str] = set()
     context_parts: list[str] = []
     source_urls: list[str] = []
     for doc in relevant_docs:
+        if doc.page_content in seen_content:
+            continue
+        seen_content.add(doc.page_content)
         src = doc.metadata.get("source", "unknown")
         title = doc.metadata.get("title", "")
         header = f"[Source: {src}]" + (f" (Title: {title})" if title else "")
