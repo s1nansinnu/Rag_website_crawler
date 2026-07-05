@@ -1,8 +1,7 @@
 """
 LangChain RAG pipeline -- document ingestion and query.
-
+Uses parallel batch embedding for minimal latency.
 """
-
 from __future__ import annotations
 
 import asyncio
@@ -29,7 +28,12 @@ def _index_path(session_id: str) -> Path:
     return config.FAISS_INDEX_DIR / session_id
 
 
-# Ingestion 
+async def _embed_batch(batch: list[Document], embeddings: GoogleGenerativeAIEmbeddings) -> FAISS:
+    """Embed a single batch of documents in a thread."""
+    return await asyncio.to_thread(FAISS.from_documents, batch, embeddings)
+
+
+# -- Ingestion ----------------------------------------------------------------
 
 async def ingest_documents(
     pages: list[dict],
@@ -93,7 +97,7 @@ async def ingest_documents(
         except Exception:
             pass
 
-    # 3. Create embeddings and FAISS index
+    # 3. Create embeddings and FAISS index (parallel batches for low latency)
     active_sessions[session_id]["status"] = "embedding"
 
     embeddings = GoogleGenerativeAIEmbeddings(
@@ -101,53 +105,28 @@ async def ingest_documents(
         google_api_key=config.GOOGLE_API_KEY,
     )
 
-    # Process embeddings in batches to allow progress reporting
-    batch_size = 50
-    if total_chunks <= batch_size:
-        # Small enough to do in one shot
-        if progress_callback:
-            try:
-                await progress_callback("embedding", 10.0)
-            except Exception:
-                pass
+    batch_size = 100  # larger batches = fewer round trips
 
-        vectorstore = await asyncio.to_thread(
-            FAISS.from_documents, chunks, embeddings
-        )
+    if progress_callback:
+        try:
+            await progress_callback("embedding", 10.0)
+        except Exception:
+            pass
 
-        if progress_callback:
-            try:
-                await progress_callback("embedding", 100.0)
-            except Exception:
-                pass
-    else:
-        # First batch to initialise the vectorstore
-        first_batch = chunks[:batch_size]
-        vectorstore = await asyncio.to_thread(
-            FAISS.from_documents, first_batch, embeddings
-        )
+    # Build all batches and embed them in parallel
+    batches = [chunks[i: i + batch_size] for i in range(0, total_chunks, batch_size)]
+    results = await asyncio.gather(*[_embed_batch(b, embeddings) for b in batches])
 
-        if progress_callback:
-            pct = (batch_size / total_chunks) * 100
-            try:
-                await progress_callback("embedding", round(pct, 1))
-            except Exception:
-                pass
+    # Merge all batch vectorstores into one
+    vectorstore = results[0]
+    for vs in results[1:]:
+        vectorstore.merge_from(vs)
 
-        # Remaining batches
-        for i in range(batch_size, total_chunks, batch_size):
-            batch = chunks[i : i + batch_size]
-            batch_vs = await asyncio.to_thread(
-                FAISS.from_documents, batch, embeddings
-            )
-            vectorstore.merge_from(batch_vs)
-
-            if progress_callback:
-                pct = min(((i + batch_size) / total_chunks) * 100, 100.0)
-                try:
-                    await progress_callback("embedding", round(pct, 1))
-                except Exception:
-                    pass
+    if progress_callback:
+        try:
+            await progress_callback("embedding", 100.0)
+        except Exception:
+            pass
 
     # 4. Persist to disk
     index_dir = _index_path(session_id)
