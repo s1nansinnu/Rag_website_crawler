@@ -22,7 +22,8 @@ export function useCrawl() {
     setTotalChunks(0)
 
     try {
-      const response = await fetch('/api/crawl', {
+      const API_URL = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${API_URL}/api/crawl`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, max_pages: maxPages }),

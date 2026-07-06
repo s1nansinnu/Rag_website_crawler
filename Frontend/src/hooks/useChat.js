@@ -26,7 +26,8 @@ export function useChat() {
     setMessages(prev => [...prev, botMsgPlaceholder])
 
     try {
-      const response = await fetch('/api/chat', {
+      const API_URL = import.meta.env.VITE_API_URL || ''
+      const response = await fetch(`${API_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
